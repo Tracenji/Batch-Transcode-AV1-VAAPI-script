@@ -3,8 +3,8 @@ contributions to expand/improve functionality or terminal/application support ar
 
 CURRENTLY ONLY SUPPORTS LINUX (and maybe MAC??? idk)
 
-Depends on:
-bash
-ffmpeg
-GNU Parallel
-Konsole (may be expended to support other terminals in the future)
+Depends on:\
+bash\
+ffmpeg\
+GNU Parallel\
+Konsole (may be expended to support other terminals in the future)\
