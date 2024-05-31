@@ -2,7 +2,7 @@
 
 # Default values
 input_dir=""
-output_dir=""
+export output_dir=""
 parallel_processes=5
 export bitrate="12M"  # Default bitrate
 
@@ -27,12 +27,12 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -o|--output)
-            output_dir="$2"
+            export output_dir="$2"
             shift 2
             ;;
         -d|--directory)
             input_dir="$2"
-            output_dir="$2"
+            export output_dir="$2"
             shift 2
             ;;
         -b|--bitrate)
@@ -77,7 +77,10 @@ fi
 # Function to perform 2-pass transcoding
 function transcode_file {
     input_file="$1"
-    output_file="${input_file%.*}-AV1.${input_file##*.}"
+    #output_file="${input_file%.*}-AV1.${input_file##*.}"
+    output_filename=$(basename "${input_file%.*}") # Get only file name from input file
+    output_file_extension="${input_file##*.}" # Get file extension from input file
+    output_file="$output_dir/$output_filename-AV1.$output_file_extension"
     log_file="${output_file%.*}.log"
 
     if [[ -f "$output_file" || "$input_file" == *"-AV1.mkv" ]]; then
@@ -86,20 +89,19 @@ function transcode_file {
     fi
 
     konsole -e bash -c "\
-#        echo $bitrate
-#        sleep 10
+        rm \"${log_file}\"-0.log
         ffmpeg -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 \
             -i \"$input_file\" \
             -vf 'bwdif,format=nv12,hwupload' \
             -c:v av1_vaapi -b:v \"$bitrate\" -an -sn \
-            -pass 1 -passlogfile \"$log_file\" -f null /dev/null && \
+            -pass 1 -passlogfile \"$log_file\" -f null /dev/null
         konsoleprofile ColorScheme=Solarized
         ffmpeg -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 \
             -i \"$input_file\" \
             -vf 'bwdif,format=nv12,hwupload' \
             -c:v av1_vaapi -b:v \"$bitrate\" -c:a copy -c:s copy \
-            -pass 2 -passlogfile \"$log_file\" \"$output_file\"; && \
-        rm -f \"${log_file}\"-0.log; &&\
+            -pass 2 -passlogfile \"$log_file\" \"$output_file\";
+        rm \"${log_file}\"-0.log
         echo "" && \
         echo "" && \
         echo "DONE" && \
