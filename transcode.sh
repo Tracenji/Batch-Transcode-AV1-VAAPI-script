@@ -5,6 +5,8 @@ input_dir=""
 export output_dir=""
 parallel_processes=5
 export bitrate="12M"  # Default bitrate
+follow_symlinks=false
+include_subdirs=false
 
 # Function to display script usage
 function usage {
@@ -15,6 +17,8 @@ function usage {
     echo "  -d  --directory <directory>        Input AND Output directory for files for transcoding and transcoded files"
     echo "  -b, --bitrate <bitrate>            Bitrate for AV1 encoding (e.g., 6M for 6 Mbps)"
     echo "  -p, --parallel <num_processes>     Number of parallel processes (default: 5)"
+    echo "  -s, --follow-symlinks              Follow symlinks"
+    echo "  -S, --include-subdirs              Include subdirectories"
     exit 1
 }
 
@@ -42,6 +46,14 @@ while [[ $# -gt 0 ]]; do
         -p|--parallel)
             parallel_processes="$2"
             shift 2
+            ;;
+        -L|--follow-symlinks)
+            follow_symlinks=true
+            shift 1
+            ;;
+        -S|--include-subdirs)
+            include_subdirs=true
+            shift 1
             ;;
         -h|--help)
             usage
@@ -111,8 +123,26 @@ function transcode_file {
 
 # Process files in parallel
 export -f transcode_file
-find "$input_dir" -type f -name "*.mkv" | \
-    parallel -j "$parallel_processes" transcode_file
+
+#check relevant parameters and dynamically construct fine command base on those
+find_command="find"
+# check for symlink option
+if [ "$follow_symlinks" = true ]; then
+    find_command="$find_command -L"
+fi
+#check for subdir optoon
+if [ "$include_subdirs" = false ]; then
+    find_command="$find_command \"$input_dir\" -maxdepth 1"
+else
+    find_command="$find_command \"$input_dir\""
+fi
+#construct final command
+find_command="$find_command -type f -name \"*.mkv\""
+
+#run constructed find command
+echo $find_command
+eval "$find_command" | LC_ALL=C parallel -j "$parallel_processes" transcode_file
+
 
 echo ""
 echo ""
