@@ -17,7 +17,7 @@ function usage {
     echo "  -d  --directory <directory>        Input AND Output directory for files for transcoding and transcoded files"
     echo "  -b, --bitrate <bitrate>            Bitrate for AV1 encoding (e.g., 6M for 6 Mbps)"
     echo "  -p, --parallel <num_processes>     Number of parallel processes (default: 5)"
-    echo "  -s, --follow-symlinks              Follow symlinks"
+    echo "  -L, --follow-symlinks              Follow symlinks"
     echo "  -S, --include-subdirs              Include subdirectories"
     exit 1
 }
