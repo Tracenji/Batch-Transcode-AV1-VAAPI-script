@@ -140,7 +140,6 @@ fi
 find_command="$find_command -type f -name \"*.mkv\""
 
 #run constructed find command
-echo $find_command
 eval "$find_command" | LC_ALL=C parallel -j "$parallel_processes" transcode_file
 
 
