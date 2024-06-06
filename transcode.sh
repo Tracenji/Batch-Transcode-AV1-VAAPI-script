@@ -3,7 +3,7 @@
 # Default values
 input_dir=""
 export output_dir=""
-parallel_processes=4
+parallel_processes=3
 export bitrate="12M"  # Default bitrate
 follow_symlinks=false
 include_subdirs=false
