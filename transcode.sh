@@ -104,20 +104,21 @@ function transcode_file {
         rm \"${log_file}\"-0.log
         ffmpeg -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 \
             -i \"$input_file\" \
-            -vf 'bwdif,format=nv12,hwupload' \
+            -filter:v:0 'bwdif,format=nv12,hwupload' \
             -c:v av1_vaapi -b:v \"$bitrate\" -an -sn \
             -pass 1 -passlogfile \"$log_file\" -f null /dev/null
         konsoleprofile ColorScheme=Solarized
         ffmpeg -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 \
             -i \"$input_file\" \
-            -vf 'bwdif,format=nv12,hwupload' \
-            -c:v av1_vaapi -b:v \"$bitrate\" -c:a copy -c:s copy \
+            -filter:v:0 'bwdif,format=nv12,hwupload' \
+            -map 0:v:0 -map 0:a? -map 0:s? -map 0:t? \
+            -c:a copy -c:s copy -c:v:0 av1_vaapi -b:v \"$bitrate\" \
             -pass 2 -passlogfile \"$log_file\" \"$output_file\";
         rm \"${log_file}\"-0.log
-        echo "" && \
-        echo "" && \
-        echo "DONE" && \
-        sleep 10
+        echo ""
+        echo ""
+        echo "DONE"
+        sleep 10"
 #        read -p 'Press Enter to exit.'"
 }
 
