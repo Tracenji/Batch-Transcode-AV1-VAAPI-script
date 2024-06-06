@@ -3,10 +3,12 @@
 # Default values
 input_dir=""
 export output_dir=""
-parallel_processes=5
+parallel_processes=4
 export bitrate="12M"  # Default bitrate
 follow_symlinks=false
 include_subdirs=false
+export two_pass=false
+
 
 # Function to display script usage
 function usage {
@@ -19,6 +21,7 @@ function usage {
     echo "  -p, --parallel <num_processes>     Number of parallel processes (default: 5)"
     echo "  -L, --follow-symlinks              Follow symlinks"
     echo "  -S, --include-subdirs              Include subdirectories"
+    echo "  -2, --two-pass                     Enable two-pass encoding"
     exit 1
 }
 
@@ -53,6 +56,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -S|--include-subdirs)
             include_subdirs=true
+            shift 1
+            ;;
+        -2|--two-pass)
+            two_pass=true
             shift 1
             ;;
         -h|--help)
@@ -100,26 +107,44 @@ function transcode_file {
         return
     fi
 
-    konsole -e bash -c "\
-        rm \"${log_file}\"-0.log
-        ffmpeg -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 \
-            -i \"$input_file\" \
-            -filter:v:0 'bwdif,format=nv12,hwupload' \
-            -c:v av1_vaapi -b:v \"$bitrate\" -an -sn \
-            -pass 1 -passlogfile \"$log_file\" -f null /dev/null
-        konsoleprofile ColorScheme=Solarized
-        ffmpeg -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 \
-            -i \"$input_file\" \
-            -filter:v:0 'bwdif,format=nv12,hwupload' \
-            -map 0:v:0 -map 0:a? -map 0:s? -map 0:t? \
-            -c:a copy -c:s copy -c:v:0 av1_vaapi -b:v \"$bitrate\" \
-            -pass 2 -passlogfile \"$log_file\" \"$output_file\";
-        rm \"${log_file}\"-0.log
-        echo ""
-        echo ""
-        echo "DONE"
-        sleep 10"
-#        read -p 'Press Enter to exit.'"
+    if [ "$two_pass" = true ]; then
+        konsole -e bash -c "\
+            rm \"${log_file}\"-0.log
+            ffmpeg -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 \
+                -i \"$input_file\" \
+                -filter:v:0 'bwdif,format=nv12,hwupload' \
+                -c:v av1_vaapi -b:v \"$bitrate\" -an -sn \
+                -pass 1 -passlogfile \"$log_file\" -f null /dev/null
+            konsoleprofile ColorScheme=Solarized
+            ffmpeg -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 \
+                -i \"$input_file\" \
+                -filter:v:0 'bwdif,format=nv12,hwupload' \
+                -map 0:v:0 -map 0:a? -map 0:s? -map 0:t? \
+                -c:a copy -c:s copy -c:v:0 av1_vaapi -b:v \"$bitrate\" \
+                -pass 2 -passlogfile \"$log_file\" \"$output_file\";
+            rm \"${log_file}\"-0.log
+            echo ""
+            echo ""
+            echo "DONE"
+            sleep 10"
+    #        read -p 'Press Enter to exit.'
+    else
+        konsole -e bash -c "\
+            rm \"${log_file}\"-0.log
+            konsoleprofile ColorScheme=Solarized
+            ffmpeg -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 \
+                -i \"$input_file\" \
+                -filter:v:0 'bwdif,format=nv12,hwupload' \
+                -map 0:v:0 -map 0:a? -map 0:s? -map 0:t? \
+                -c:a copy -c:s copy -c:v:0 av1_vaapi -b:v \"$bitrate\" \
+                \"$output_file\";
+            rm \"${log_file}\"-0.log
+            echo ""
+            echo ""
+            echo "DONE"
+            sleep 10"
+    #        read -p 'Press Enter to exit.'
+    fi
 }
 
 # Process files in parallel
@@ -141,7 +166,7 @@ fi
 find_command="$find_command -type f -name \"*.mkv\""
 
 #run constructed find command
-eval "$find_command" | LC_ALL=C parallel -j "$parallel_processes" transcode_file
+eval "$find_command" | LC_ALL=C.UTF-8 parallel -j "$parallel_processes" transcode_file
 
 
 echo ""
